@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profil</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { 
+      margin: 0; 
+      font-family: 'Segoe UI', sans-serif; 
+      background: #ffffff; /* latar putih */
+      padding-bottom: 80px; /* agar konten tidak tertutup bottom nav */
+    }
+    .header {
+      background: linear-gradient(135deg, #4aa3c5, #77c9d4);
+      height: 180px;
+      border-bottom-left-radius: 50px; 
+      border-bottom-right-radius: 50px;
+      position: relative; 
+      display: flex; 
+      justify-content: center; 
+      align-items: flex-end; 
+      padding-bottom: 60px;
+    }
+    .profile-pic {
+      position: absolute; 
+      bottom: -50px; 
+      width: 100px; 
+      height: 100px;
+      border-radius: 50%; 
+      border: 4px solid #fff;
+      background: url('https://cdn-icons-png.flaticon.com/512/149/149071.png') center/cover;
+    }
+    .profile-info { 
+      text-align: center; 
+      margin-top: 60px; 
+    }
+    .profile-info h2 { 
+      margin: 10px 0 5px; 
+      color: #333; 
+    }
+    .profile-info p { 
+      margin: 2px 0; 
+      color: #666; 
+      font-size: 14px; 
+    }
+    .menu { 
+      margin: 30px auto; 
+      max-width: 350px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 15px; 
+    }
+    .menu button {
+      padding: 15px; 
+      border: none; 
+      border-radius: 12px;
+      font-size: 15px; 
+      text-align: left; 
+      background: #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
+      cursor: pointer; 
+      transition: 0.3s;
+    }
+    .menu button:hover { 
+      background: #f0f0f0; 
+    }
+    .logout { 
+      color: #e74c3c; 
+      font-weight: bold; 
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #46A6D9;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 0;
+      z-index: 1000;
+    }
+    .bottom-nav a {
+      flex: 1;
+      text-align: center;
+      color: #fff;
+      text-decoration: none;
+      font-size: 12px;
+      padding: 6px 0;
+    }
+    .bottom-nav a i {
+      font-size: 20px;
+      display: block;
+      margin-bottom: 3px;
+    }
+    .bottom-nav a.active {
+      background-color: #2f3e9e;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="profile-pic" id="fotoProfil"></div>
+  </div>
+  <div class="profile-info">
+    <h2 id="nama">Nama</h2>
+    <p id="nisn">NISN: -</p>
+    <p id="kelas">Kelas: -</p>
+    <p id="jabatan">Jabatan: -</p>
+  </div>
+  <div class="menu">
+    <button>📄 Account Information</button>
+    <button>🔒 Password</button>
+    <button>⚙️ Settings</button>
+    <button>❓ Help & Support</button>
+    <button class="logout" onclick="logout()">🚪 Log out</button>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="izin.html"><i class="fa fa-check-square"></i>Izin</a>
+    <a href="scan.html"><i class="fa fa-qrcode"></i>Scan</a>
+    <a href="recap.html"><i class="fa fa-book"></i>Recap</a>
+    <a href="profile.html" class="active"><i class="fa fa-user"></i>Profil</a>
+  </nav>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey:"AIzaSyBr4DNrjgpg1z_VVuP_uBJEs4iy0zkLOig",
+      authDomain:"absensi-digital-199d2.firebaseapp.com",
+      databaseURL:"https://absensi-digital-199d2-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId:"absensi-digital-199d2",
+      storageBucket:"absensi-digital-199d2.appspot.com",
+      messagingSenderId:"387823714427",
+      appId:"1:387823714427:web:6938dd60c1fcf1a87662de"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const firestore = firebase.firestore();
+
+    async function fetchDataFromKKTA(nisn) {
+      try {
+        const response = await fetch(`https://api.kkta.com/profile/${nisn}`);
+        if (!response.ok) throw new Error('Gagal ambil data dari API KKTA');
+        return await response.json();
+      } catch (error) {
+        console.error('Error API KKTA:', error);
+        alert('Gagal terhubung ke API KKTA. Menggunakan data lokal.');
+        return null;
+      }
+    }
+
+    async function loadProfile() {
+      const role = localStorage.getItem("role");
+      const nisn = localStorage.getItem("nisn");
+
+      if (role === "guru") {
+        const nama = localStorage.getItem("nama");
+        const jabatan = localStorage.getItem("jabatan");
+        if (!nama || !jabatan) {
+          alert("Data guru tidak ditemukan, silakan daftar ulang.");
+          window.location.href = "opsi.html";
+        } else {
+          document.getElementById("nama").innerText = nama;
+          document.getElementById("jabatan").innerText = "Jabatan: " + jabatan;
+        }
+      } else if (role === "murid") {
+        if (!nisn) {
+          alert("NISN tidak ditemukan, silakan daftar ulang.");
+          window.location.href = "opsi.html";
+          return;
+        }
+        const kktaData = await fetchDataFromKKTA(nisn);
+        if (kktaData) {
+          document.getElementById("nama").innerText = kktaData.nama || "Nama tidak tersedia";
+          document.getElementById("nisn").innerText = "NISN: " + nisn;
+          document.getElementById("kelas").innerText = "Kelas: " + (kktaData.kelas || "Tidak tersedia");
+          document.getElementById("jabatan").innerText = "Jabatan: Murid";
+          if (kktaData.foto) {
+            document.getElementById("fotoProfil").style.background = `url('${kktaData.foto}') center/cover`;
+          }
+        } else {
+          const nama = localStorage.getItem("nama");
+          const kelas = localStorage.getItem("kelas");
+          if (!nama || !kelas) {
+            alert("Data murid tidak ditemukan, silakan daftar ulang.");
+            window.location.href = "opsi.html";
+          } else {
+            document.getElementById("nama").innerText = nama;
+            document.getElementById("nisn").innerText = "NISN: " + nisn;
+            document.getElementById("kelas").innerText = "Kelas: " + kelas;
+            document.getElementById("jabatan").innerText = "Jabatan: Murid";
+          }
+        }
+      } else {
+        alert("Data login tidak valid.");
+        window.location.href = "opsi.html";
+      }
+    }
+
+    // 🧩 Logout + reset token guru (pakai field Firestore yang benar)
+    async function logout() {
+      const role = localStorage.getItem("role");
+      const token = localStorage.getItem("token");
+
+      try {
+        if (role === "guru" && token) {
+          const tokenSnap = await firestore.collection("token_guru").where("kode", "==", token).get();
+          tokenSnap.forEach(async (doc) => {
+            await firestore.collection("token_guru").doc(doc.id).update({
+              status: "belum digunakan",
+              digunakanOleh: "",
+              jabatan: "",
+              digunakanPada: null
+            });
+          });
+        }
+
+        localStorage.clear();
+        alert("✅ Logout berhasil! Token guru bisa dipakai lagi.");
+        window.location.href = "opsi.html";
+      } catch (error) {
+        alert("❌ Gagal logout: " + error.message);
+        console.error(error);
+      }
+    }
+
+    window.onload = loadProfile;
+  </script>
+</body>
+</html>

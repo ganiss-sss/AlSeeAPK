@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Halaman Home</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #fff;
+      height: 100%;
+      overflow-x: hidden;
+    }
+    /* Header */
+    .header {
+      background-color: #4ba3c7;
+      color: white;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .user-info { display: flex; flex-direction: column; }
+    .user-info strong { font-size: 16px; }
+    .user-info span { font-size: 14px; }
+
+    /* Clock */
+    .clock { text-align: center; margin: 30px 0 10px; }
+    .clock h1 { font-size: 48px; margin: 0; color: #000; }
+
+    /* Menu Grid */
+    .grid-menu {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      padding: 20px;
+      padding-bottom: 100px;
+    }
+    .menu-item {
+      background-color: #4ba3c7;
+      color: white;
+      border-radius: 12px;
+      padding: 30px 0;
+      text-align: center;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .menu-item:hover { background-color: #337ea0; }
+    .menu-item i { display: block; font-size: 28px; margin-bottom: 8px; }
+
+    /* Badge di menu */
+    .badge {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      background: red;
+      color: white;
+      font-size: 12px;
+      border-radius: 50%;
+      padding: 4px 7px;
+      font-weight: bold;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      background-color: #4ba3c7;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      z-index: 100;
+    }
+    .bottom-nav a { color: white; text-decoration: none; font-size: 12px; text-align: center; }
+    .bottom-nav a i { font-size: 20px; display: block; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="user-info">
+      <strong id="namaUser">Nama Lengkap</strong>
+      <span id="kelasUser">Kelas / NISN</span>
+    </div>
+  </div>
+
+  <!-- Jam -->
+  <div class="clock">
+    <h1 id="jam">--:--</h1>
+    <p id="hari">Hari</p>
+  </div>
+
+  <!-- Menu -->
+  <div class="grid-menu">
+    <div class="menu-item">
+      <i class="fa fa-user-plus"></i>
+      <span class="badge" id="badge-hadir">0</span>
+      Hadir
+    </div>
+    <div class="menu-item">
+      <i class="fa fa-face-frown"></i>
+      <span class="badge" id="badge-sakit">0</span>
+      Sakit
+    </div>
+    <div class="menu-item">
+      <i class="fa fa-envelope"></i>
+      <span class="badge" id="badge-izin">0</span>
+      Izin
+    </div>
+    <div class="menu-item">
+      <i class="fa fa-id-card"></i>
+      <span class="badge" id="badge-idcard">0</span>
+      ID Card
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <div class="bottom-nav">
+    <a href="home.html" class="active"><i class="fa fa-home"></i>Home</a>
+    <a href="izin.html"><i class="fa fa-envelope-open-text"></i>Izin</a>
+    <a href="scan.html"><i class="fa fa-calendar-check"></i>Absent</a>
+    <a href="recap.html"><i class="fa fa-list-alt"></i>Recap</a>
+    <a href="profile.html"><i class="fa fa-user-circle"></i>Profil</a>
+  </div>
+
+  <script>
+    // Firebase Config - ganti dengan project kamu
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "SENDER_ID",
+      appId: "APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ambil data user dari localStorage
+    const nama = localStorage.getItem("nama");
+    const kelas = localStorage.getItem("kelas");
+    const nisn = localStorage.getItem("nisn");
+
+    if (!nama || !kelas || !nisn) {
+      window.location.href = "daftar.html";
+    } else {
+      document.getElementById("namaUser").innerText = nama;
+      document.getElementById("kelasUser").innerText = `${kelas} / ${nisn}`;
+    }
+
+    // update jam
+    function updateClock() {
+      const now = new Date();
+      const jam = now.getHours().toString().padStart(2, '0');
+      const menit = now.getMinutes().toString().padStart(2, '0');
+      const detik = now.getSeconds().toString().padStart(2, '0');
+      document.getElementById("jam").innerText = `${jam}:${menit}:${detik}`;
+      const hariList = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+      document.getElementById("hari").innerText = hariList[now.getDay()];
+    }
+    setInterval(updateClock, 1000); updateClock();
+
+    // ambil data absensi sesuai nisn
+    if (nisn) {
+      db.ref("absensi/" + nisn).on("value", snap => {
+        if (snap.exists()) {
+          const data = snap.val();
+          document.getElementById("badge-hadir").innerText = data.hadir || 0;
+          document.getElementById("badge-sakit").innerText = data.sakit || 0;
+          document.getElementById("badge-izin").innerText = data.izin || 0;
+          document.getElementById("badge-idcard").innerText = data.idcard || 0;
+        }
+      });
+    }
+  </script>
+</body>
+</html>

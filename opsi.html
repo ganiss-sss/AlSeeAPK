@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pilih Peran</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #4a99bb;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background-color: #e3e3e3;
+      padding: 50px 30px;
+      border-radius: 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      width: 300px;
+    }
+    h1 {
+      color: #4a99bb;
+      margin-bottom: 40px;
+      font-size: 24px;
+    }
+    .option {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .card {
+      background-color: white;
+      border-radius: 15px;
+      padding: 20px 0;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      color: #4a99bb;
+      font-weight: bold;
+      font-size: 18px;
+      transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s;
+    }
+    .card:hover {
+      background-color: #4a99bb;
+      color: white;
+      transform: scale(1.05);
+    }
+    a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pilih Peran Anda</h1>
+    <div class="option">
+      <a href="daftarguru.html">
+        <div class="card">Guru</div>
+      </a>
+      <a href="daftar.html">
+        <div class="card">Murid</div>
+      </a>
+      <!-- 🧩 Tambahan baru untuk Admin -->
+      <a href="token.html">
+        <div class="card">Admin</div>
+      </a>
+    </div>
+  </div>
+</body>
+</html>

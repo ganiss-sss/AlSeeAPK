@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pendaftaran Guru</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #4aa3c5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: #e6e6e6;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      width: 350px;
+      text-align: center;
+    }
+    h2 {
+      color: #4aa3c5;
+      margin-bottom: 20px;
+    }
+    .input-field {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 30px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 30px;
+      background-color: #4aa3c5;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 15px;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #2f7e9e;
+      transform: scale(1.03);
+    }
+    .message {
+      margin-top: 15px;
+      font-size: 14px;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Pendaftaran Guru</h2>
+    <form id="loginGuruForm">
+      <input type="text" id="nama" class="input-field" placeholder="Nama Lengkap" required />
+      <input type="text" id="jabatan" class="input-field" placeholder="Jabatan (contoh: BK, Wali Kelas)" required />
+      <input type="text" id="token" class="input-field" placeholder="Kode Undangan" required />
+      <button type="submit">Daftar & Masuk</button>
+    </form>
+    <div id="message" class="message"></div>
+  </div>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    // 🔥 Konfigurasi Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBr4DNrjgpg1z_VVuP_uBJEs4iy0zkLOig",
+      authDomain: "absensi-digital-199d2.firebaseapp.com",
+      databaseURL: "https://absensi-digital-199d2-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "absensi-digital-199d2",
+      storageBucket: "absensi-digital-199d2.appspot.com",
+      messagingSenderId: "387823714427",
+      appId: "1:387823714427:web:6938dd60c1fcf1a87662de"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Jika sudah login, langsung ke home
+    if (localStorage.getItem("role") === "guru") {
+       window.location.href = "home.html";
+    }
+
+    document.getElementById("loginGuruForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+
+      const nama = document.getElementById("nama").value.trim();
+      const jabatan = document.getElementById("jabatan").value.trim();
+      const token = document.getElementById("token").value.trim().toUpperCase();
+      const messageDiv = document.getElementById("message");
+
+      if (!nama || !jabatan || !token) {
+        messageDiv.innerHTML = `<div class="error">❌ Semua kolom wajib diisi.</div>`;
+        return;
+      }
+
+      try {
+        // 🔒 Cek apakah token valid di Firestore
+        const tokenRef = await db.collection("token_guru").where("kode", "==", token).where("status", "==", "belum_digunakan").get();
+        
+        if (tokenRef.empty) {
+          messageDiv.innerHTML = `<div class="error">❌ Kode undangan tidak valid atau sudah digunakan.</div>`;
+          return;
+        }
+
+        // Jika token valid → lanjut daftar guru
+        const snapshot = await db.collection("guru")
+          .where("nama", "==", nama)
+          .where("jabatan", "==", jabatan)
+          .get();
+
+        if (snapshot.empty) {
+          await db.collection("guru").add({
+            nama,
+            jabatan,
+            token,
+            createdAt: new Date()
+          });
+        }
+
+        // Update status token jadi "digunakan"
+       // Update status token + simpan siapa yang pakai
+tokenRef.forEach(async doc => {
+  await db.collection("token_guru").doc(doc.id).update({
+    status: "digunakan",
+    digunakan_oleh: nama,
+    jabatan: jabatan,
+    digunakan_pada: new Date()
+  });
+});
+
+
+        // Simpan status login di localStorage
+        localStorage.setItem("nama", nama);
+        localStorage.setItem("jabatan", jabatan);
+        localStorage.setItem("role", "guru");
+
+        messageDiv.innerHTML = `<div class="success">✅ Pendaftaran berhasil! Mengarahkan...</div>`;
+        setTimeout(() => { window.location.href = "profile.html"; }, 1000);
+      } catch (error) {
+        messageDiv.innerHTML = `<div class="error">❌ Gagal: ${error.message}</div>`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rekap Absensi - SMA Al Hadiid</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f9;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: linear-gradient(90deg, #2c3e97, #4a69bd);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .container {
+      padding: 20px;
+      max-width: 1200px;
+      margin: auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .filter-container label {
+      font-weight: bold;
+      color: #2c3e97;
+    }
+    .filter-container select,
+    .filter-container input {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 200px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    .filter-container select:focus,
+    .filter-container input:focus {
+      border-color: #2c3e97;
+      outline: none;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+    .btn-primary { background: #2c3e97; color: white; }
+    .btn-danger { background: #e74c3c; color: white; }
+    .btn-export { background: #27ae60; color: white; }
+    .btn:hover { opacity: 0.9; transform: scale(1.05); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+    table th {
+      background: #2c3e97;
+      color: white;
+    }
+    table tr:nth-child(even) { background: #f9f9f9; }
+    table tr:hover { background: #f1f1f1; }
+
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    }
+    .modal-content h2 { margin-top: 0; color: #2c3e97; }
+
+    .info-text {
+      margin: 10px 0;
+      font-style: italic;
+      color: #2c3e97;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: #46A6D9;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 0;
+      z-index: 1000;
+    }
+    .bottom-nav a {
+      flex: 1;
+      text-align: center;
+      color: #fff;
+      text-decoration: none;
+      font-size: 12px;
+      padding: 6px 0;
+      transition: background-color 0.3s;
+    }
+    .bottom-nav a i {
+      font-size: 20px;
+      display: block;
+      margin-bottom: 3px;
+    }
+    .bottom-nav a.active {
+      background-color: #2f3e9e;
+      border-radius: 6px;
+    }
+    .bottom-nav a:active {
+      background-color: #000;
+    }
+
+    /* Modal untuk password */
+    .password-modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2000;
+    }
+    .password-modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    .password-modal-content h2 { color: #2c3e97; margin-bottom: 20px; }
+    .password-modal-content input {
+      padding: 10px;
+      width: 200px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    .password-modal-content button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 0 10px;
+    }
+    .password-modal-content .btn-primary { background: #2c3e97; color: white; }
+    .password-modal-content .btn-danger { background: #e74c3c; color: white; }
+  </style>
+</head>
+<body>
+  <header>REKAP ABSENSI</header>
+
+  <div class="container">
+    <div class="filter-container">
+      <label for="kelasFilter">Filter Kelas:</label>
+      <select id="kelasFilter" onchange="loadIzinList()">
+        <option value="">-- Semua Kelas --</option>
+        <option value="12 MIPA A">12 MIPA A</option>
+        <option value="12 MIPA B">12 MIPA B</option>
+        <option value="12 IPS">12 IPS</option>
+      </select>
+
+      <label for="tanggalFilter">Filter Tanggal:</label>
+      <input type="date" id="tanggalFilter" onchange="loadIzinList()" />
+
+      <label for="searchInput">Cari Nama:</label>
+      <input type="text" id="searchInput" oninput="loadIzinList()" placeholder="Masukkan nama..." />
+      
+      <button class="btn btn-export" onclick="eksporCSV()">Ekspor CSV</button>
+    </div>
+
+    <h2>Absensi Harian</h2>
+    <p id="infoText" class="info-text"></p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tanggal</th>
+          <th>Nama</th>
+          <th>Kelas</th>
+          <th>Jenis Izin</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="izinList">
+        <tr>
+          <td colspan="5" style="text-align:center;">Belum ada data</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Script Firebase -->
+  <script>
+    const firebaseConfig = {
+      apiKey:"AIzaSyBr4DNrjgpg1z_VVuP_uBJEs4iy0zkLOig",
+      authDomain:"absensi-digital-199d2.firebaseapp.com",
+      databaseURL:"https://absensi-digital-199d2-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId:"absensi-digital-199d2",
+      storageBucket:"absensi-digital-199d2.appspot.com",
+      messagingSenderId:"387823714427",
+      appId:"1:387823714427:web:6938dd60c1fcf1a87662de"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // Password untuk akses recap (selain guru)
+    const recapPassword = "alhadiidoke"; // Ganti password ini sesuai kebutuhan
+
+    // Fungsi untuk menampilkan modal password
+    function showPasswordModal() {
+      const modal = document.createElement('div');
+      modal.className = 'password-modal';
+      modal.innerHTML = `
+        <div class="password-modal-content">
+          <h2>Akses Terbatas</h2>
+          <p>Masukkan password untuk mengakses halaman recap:</p>
+          <input type="password" id="passwordInput" placeholder="Password" />
+          <br>
+          <button class="btn-primary" onclick="checkPassword()">Masuk</button>
+          <button class="btn-danger" onclick="redirectToHome()">Batal</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    // Fungsi untuk cek password
+    function checkPassword() {
+      const input = document.getElementById('passwordInput').value;
+      if (input === recapPassword) {
+        document.querySelector('.password-modal').remove();
+        loadIzinList(); // Lanjutkan load data
+      } else {
+        alert('Password salah! Akses ditolak.');
+        redirectToHome();
+      }
+    }
+
+    // Fungsi redirect jika gagal
+    function redirectToHome() {
+      window.location.href = 'recap.html'; // Ganti dengan halaman utama jika ada
+    }
+
+    // Cek akses saat load
+    window.onload = function() {
+      const role = localStorage.getItem('role');
+      if (role === 'guru') {
+        loadIzinList(); // Langsung load jika guru
+      } else {
+        showPasswordModal(); // Tampilkan modal password untuk selain guru
+      }
+    };
+
+    function loadIzinList() {
+      const kelasFilter = document.getElementById('kelasFilter').value;
+      const tanggalFilter = document.getElementById('tanggalFilter').value;
+      const searchInput = document.getElementById('searchInput').value.toLowerCase();
+      const izinRef = database.ref('izin');
+      const infoText = document.getElementById('infoText');
+
+      izinRef.once('value').then(snapshot => {
+        const izinList = document.getElementById('izinList');
+        izinList.innerHTML = '';
+
+        if (snapshot.exists()) {
+          let data = [];
+          let activeDate = "";
+
+          snapshot.forEach(child => {
+            const item = child.val();
+            const tanggal = new Date(item.tanggal).toLocaleDateString('id-ID');
+            const kelas = item.kelas;
+            const nama = item.nama.toLowerCase();
+
+            const today = new Date().toLocaleDateString('id-ID');
+            const isToday = tanggalFilter 
+              ? tanggal === new Date(tanggalFilter).toLocaleDateString('id-ID')
+              : tanggal === today;
+
+            const isKelasMatch = kelasFilter ? kelas === kelasFilter : true;
+            const isSearchMatch = searchInput ? nama.includes(searchInput) : true;
+
+            if (isToday && isKelasMatch && isSearchMatch) {
+              data.push({
+                key: child.key,
+                tanggal: tanggal,
+                nama: item.nama,
+                kelas: item.kelas,
+                jenisIzin: item.jenisIzin,
+                alasan: item.alasan
+              });
+              activeDate = tanggalFilter ? new Date(tanggalFilter).toLocaleDateString('id-ID') : today;
+            }
+          });
+
+          data.sort((a, b) => {
+            if (a.kelas < b.kelas) return -1;
+            if (a.kelas > b.kelas) return 1;
+            return a.nama.localeCompare(b.nama);
+          });
+
+          if (data.length > 0) {
+            data.forEach(item => {
+              izinList.innerHTML += `
+                <tr>
+                  <td>${item.tanggal}</td>
+                  <td>${item.nama}</td>
+                  <td>${item.kelas}</td>
+                  <td>${item.jenisIzin}</td>
+                  <td>
+                    <button class="btn btn-primary" onclick="lihatDetail('${item.key}')">Detail</button>
+                  </td>
+                </tr>
+              `;
+            });
+            infoText.textContent = "Menampilkan data tanggal: " + activeDate;
+          } else {
+            izinList.innerHTML = `<tr><td colspan="5" style="text-align:center;">Belum ada data</td></tr>`;
+            infoText.textContent = "Tidak ada data untuk tanggal ini.";
+          }
+        } else {
+          izinList.innerHTML = `<tr><td colspan="5" style="text-align:center;">Belum ada data</td></tr>`;
+          infoText.textContent = "Belum ada data izin tersimpan.";
+        }
+      });
+    }
+
+    function lihatDetail(id) {
+      database.ref('izin/' + id).once('value').then(snap => {
+        const izin = snap.val();
+        const tanggal = new Date(izin.tanggal).toLocaleDateString('id-ID');
+        const modal = document.createElement('div');
+        modal.className = "modal";
+        modal.innerHTML = `
+          <div class="modal-content">
+            <h2>Detail Izin</h2>
+            <p><b>Nama:</b> ${izin.nama}</p>
+            <p><b>Kelas:</b> ${izin.kelas}</p>
+            <p><b>Tanggal:</b> ${tanggal}</p>
+            <p><b>Jenis Izin:</b> ${izin.jenisIzin}</p>
+            <p><b>Alasan:</b> ${izin.alasan}</p>
+            <div style="text-align:right;">
+              <button class="btn btn-danger" onclick="this.closest('.modal').remove()">Tutup</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      });
+    }
+
+    function eksporCSV() {
+      const izinRef = database.ref('izin');
+      izinRef.once('value').then(snapshot => {
+        const data = [];
+        snapshot.forEach(child => {
+          const item = child.val();
+          data.push({
+            tanggal: new Date(item.tanggal).toLocaleDateString('id-ID'),
+            nama: item.nama,
+            kelas: item.kelas,
+            jenisIzin: item.jenisIzin,
+            alasan: item.alasan
+          });
+        });
+
+        const csvContent = "data:text/csv;charset=utf-8," 
+          + "Tanggal,Nama,Kelas,Jenis Izin,Alasan\n" 
+          + data.map(e => `${e.tanggal},${e.nama},${e.kelas},${e.jenisIzin},${e.alasan}`).join("\n");
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "daftar_izin.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+    }
+  </script>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="izin.html"><i class="fa fa-check-square"></i>Izin</a>
+    <a href="scan.html"><i class="fa fa-qrcode"></i>Scan</a>
+    <a href="recap.html" class="active"><i class="fa fa-book"></i>Recap</a>
+    <a href="profile.html"><i class="fa fa-user"></i>Profil</a>
+  </nav>
+</body>
+</html>

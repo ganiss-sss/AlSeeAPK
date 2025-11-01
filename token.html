@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Token Guru</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #ffffff;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+    }
+
+    .container {
+      background: #f9f9f9;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      width: 420px;
+      margin-top: 50px;
+      text-align: center;
+    }
+
+    h2 {
+      color: #4aa3c5;
+      margin-bottom: 20px;
+    }
+
+    button {
+      background-color: #4aa3c5;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 10px;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background-color: #2f7e9e;
+    }
+
+    table {
+      width: 95%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      margin-bottom: 40px;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    th, td {
+      padding: 10px;
+      border: 1px solid #eee;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    th {
+      background-color: #4aa3c5;
+      color: white;
+    }
+
+    .delete-btn, .copy-btn {
+      border: none;
+      border-radius: 6px;
+      color: white;
+      padding: 5px 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .delete-btn {
+      background-color: #ff4d4d;
+    }
+
+    .copy-btn {
+      background-color: #4aa3c5;
+      margin-left: 5px;
+    }
+
+    .delete-btn:hover {
+      background-color: #cc0000;
+    }
+
+    .copy-btn:hover {
+      background-color: #2f7e9e;
+    }
+
+    .used {
+      color: green;
+      font-weight: bold;
+    }
+
+    .unused {
+      color: red;
+      font-weight: bold;
+    }
+
+    #statusMsg {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="adminContainer" style="display:none;">
+    <h2>Manajemen Token Guru</h2>
+    <button id="generateTokenBtn">+ Buat Token Baru</button>
+    <div id="statusMsg"></div>
+  </div>
+
+  <table id="tokenTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Kode Token</th>
+        <th>Status</th>
+        <th>Digunakan Oleh</th>
+        <th>Jabatan</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="tokenList"></tbody>
+  </table>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // 🔥 Konfigurasi Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBr4DNrjgpg1z_VVuP_uBJEs4iy0zkLOig",
+      authDomain: "absensi-digital-199d2.firebaseapp.com",
+      projectId: "absensi-digital-199d2",
+      storageBucket: "absensi-digital-199d2.appspot.com",
+      messagingSenderId: "387823714427",
+      appId: "1:387823714427:web:6938dd60c1fcf1a87662de"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const tokenList = document.getElementById("tokenList");
+    const statusMsg = document.getElementById("statusMsg");
+    const adminContainer = document.getElementById("adminContainer");
+    const tokenTable = document.getElementById("tokenTable");
+
+    // 🔐 KODE AKSES ADMIN
+    const ADMIN_KODE = "ADMIN-123";
+
+    // 🧩 Saat halaman dimuat, minta kode akses
+    window.onload = async () => {
+      const input = prompt("Masukkan kode akses admin:");
+
+      if (input === ADMIN_KODE) {
+        adminContainer.style.display = "block";
+        tokenTable.style.display = "table";
+      } else {
+        alert("Kode salah! Akses ditolak.");
+        window.location.href = "opsi.html";
+        return;
+      }
+    };
+
+    // 🎟️ Buat token acak
+    function generateToken() {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let code = "GURU-";
+      for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    // ➕ Tambahkan token baru
+    document.getElementById("generateTokenBtn").addEventListener("click", async () => {
+      const kodeBaru = generateToken();
+      try {
+        await db.collection("token_guru").add({
+          kode: kodeBaru,
+          status: "belum_digunakan",
+          digunakan_oleh: "",
+          jabatan: "",
+          digunakan_pada: null,
+          created_at: new Date()
+        });
+        statusMsg.textContent = `✅ Token ${kodeBaru} berhasil dibuat!`;
+        statusMsg.style.color = "green";
+      } catch (error) {
+        statusMsg.textContent = `❌ Gagal membuat token: ${error.message}`;
+        statusMsg.style.color = "red";
+      }
+    });
+
+    // 🔁 Tampilkan token realtime
+    db.collection("token_guru").orderBy("created_at", "desc").onSnapshot(snapshot => {
+      tokenList.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = `
+          <tr>
+            <td>${data.kode}</td>
+            <td class="${data.status === 'belum_digunakan' ? 'unused' : 'used'}">${data.status}</td>
+            <td>${data.digunakan_oleh || "-"}</td>
+            <td>${data.jabatan || "-"}</td>
+            <td>
+              <button class="copy-btn" onclick="copyToken('${data.kode}')">Salin</button>
+              <button class="delete-btn" onclick="hapusToken('${doc.id}')">Hapus</button>
+            </td>
+          </tr>
+        `;
+        tokenList.innerHTML += row;
+      });
+    });
+
+    // 📋 Salin token ke clipboard
+    function copyToken(kode) {
+      navigator.clipboard.writeText(kode);
+      alert(`✅ Token ${kode} berhasil disalin!`);
+    }
+
+    // 🗑️ Hapus token
+    async function hapusToken(id) {
+      if (confirm("Yakin ingin menghapus token ini?")) {
+        await db.collection("token_guru").doc(id).delete();
+      }
+    }
+  </script>
+</body>
+</html>
