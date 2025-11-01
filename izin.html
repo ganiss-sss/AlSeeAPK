@@ -11,7 +11,7 @@
       background: #f4f6f9;
       margin: 0;
       padding: 0;
-      padding-bottom: 80px; /* Tambahkan padding bawah agar konten tidak tertutup oleh bottom nav */
+      padding-bottom: 80px;
     }
     header {
       background: linear-gradient(90deg, #2c3e97, #4a69bd);
@@ -63,8 +63,6 @@
       color: white;
     }
     .btn:hover { background: #4a69bd; }
-
-    /* Bottom Navigation */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -141,7 +139,6 @@
     </form>
   </div>
 
-  <!-- Bottom Navigation -->
   <nav class="bottom-nav">
     <a href="izin.html" class="active"><i class="fa fa-check-square"></i>Izin</a>
     <a href="scan.html"><i class="fa fa-qrcode"></i>Scan</a>
@@ -180,7 +177,6 @@
       let gambarUrl = null;
 
       if (gambarFile) {
-        // Upload gambar ke Firebase Storage
         const storageRef = storage.ref('izin/' + Date.now() + '_' + gambarFile.name);
         try {
           const snapshot = await storageRef.put(gambarFile);
@@ -203,5 +199,20 @@
         });
     });
   </script>
+
+  <!-- Start of Tawk.to Script -->
+  <script type="text/javascript">
+  var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+  (function(){
+  var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+  s1.async=true;
+  s1.src='https://embed.tawk.to/69062471ac30df19517d4e5c/1j8vvsng6';
+  s1.charset='UTF-8';
+  s1.setAttribute('crossorigin','*');
+  s0.parentNode.insertBefore(s1,s0);
+  })();
+  </script>
+  <!-- End of Tawk.to Script -->
+
 </body>
 </html>
