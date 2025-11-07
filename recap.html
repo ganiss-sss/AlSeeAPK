@@ -3,212 +3,112 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Rekap Absensi - SMA Al Hadiid</title>
+  <title>Rekap Kehadiran & Izin - SMA Al Hadiid</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-  <!-- Firebase SDK -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #f4f6f9;
+      background-color: #f4f6f9;
       margin: 0;
-      padding: 0;
+      padding: 0 0 80px;
     }
-
     header {
-      background: linear-gradient(90deg, #2c3e97, #4a69bd);
-      color: white;
-      padding: 20px;
       text-align: center;
-      font-size: 20px;
-      font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-    }
-
-    .container {
-      padding: 20px;
-      max-width: 1200px;
-      margin: auto;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .filter-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    .filter-container label {
-      font-weight: bold;
-      color: #2c3e97;
-    }
-    .filter-container select,
-    .filter-container input {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 200px;
-      font-size: 14px;
-      transition: border-color 0.3s;
-    }
-    .filter-container select:focus,
-    .filter-container input:focus {
-      border-color: #2c3e97;
-      outline: none;
-    }
-
-    .btn {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.3s, transform 0.2s;
-    }
-    .btn-primary { background: #2c3e97; color: white; }
-    .btn-danger { background: #e74c3c; color: white; }
-    .btn-export { background: #27ae60; color: white; }
-    .btn:hover { opacity: 0.9; transform: scale(1.05); }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    table th, table td {
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
-    }
-    table th {
-      background: #2c3e97;
+      background-color: #2f3e9e;
       color: white;
+      padding: 20px;
     }
-    table tr:nth-child(even) { background: #f9f9f9; }
-    table tr:hover { background: #f1f1f1; }
+    header h1 { margin: 0; font-size: 22px; }
+    .container { padding: 20px; max-width: 900px; margin: auto; background: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #46A6D9; color: white; }
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    select, input[type="date"], input[type="text"] {
+      padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px;
+    }
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-primary { background-color: #2f3e9e; }
+    .btn-danger { background-color: #e74c3c; }
+    .btn-export { background-color: #27ae60; }
+    #infoText { margin-top: 10px; font-size: 14px; color: #555; }
 
+    /* Modal */
     .modal {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex; align-items: center; justify-content: center;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 9999;
     }
     .modal-content {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      max-width: 600px;
-      width: 90%;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-    }
-    .modal-content h2 { margin-top: 0; color: #2c3e97; }
-
-    .info-text {
-      margin: 10px 0;
-      font-style: italic;
-      color: #2c3e97;
+      background: white; padding: 20px; border-radius: 10px;
+      width: 90%; max-width: 400px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
     }
 
+    /* Bottom Nav */
     .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background-color: #46A6D9;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      padding: 8px 0;
-      z-index: 1000;
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background-color: #46A6D9; display: flex;
+      justify-content: space-around; align-items: center;
+      padding: 8px 0; z-index: 1000;
     }
     .bottom-nav a {
-      flex: 1;
-      text-align: center;
-      color: #fff;
-      text-decoration: none;
-      font-size: 12px;
-      padding: 6px 0;
-      transition: background-color 0.3s;
+      flex: 1; text-align: center; color: #fff;
+      text-decoration: none; font-size: 12px; padding: 6px 0;
     }
     .bottom-nav a i {
-      font-size: 20px;
-      display: block;
-      margin-bottom: 3px;
+      font-size: 20px; display: block; margin-bottom: 3px;
     }
     .bottom-nav a.active {
-      background-color: #2f3e9e;
-      border-radius: 6px;
+      background-color: #2f3e9e; border-radius: 6px;
     }
-    .bottom-nav a:active {
-      background-color: #000;
-    }
-
-    /* Modal untuk password */
-    .password-modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.8);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 2000;
-    }
-    .password-modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      text-align: center;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    }
-    .password-modal-content h2 { color: #2c3e97; margin-bottom: 20px; }
-    .password-modal-content input {
-      padding: 10px;
-      width: 200px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      margin-bottom: 20px;
-    }
-    .password-modal-content button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin: 0 10px;
-    }
-    .password-modal-content .btn-primary { background: #2c3e97; color: white; }
-    .password-modal-content .btn-danger { background: #e74c3c; color: white; }
   </style>
 </head>
 <body>
-  <header>REKAP ABSENSI</header>
+
+  <header>
+    <h1>REKAP ABSENSI</h1>
+    <p>absensi dan izin siswi SMA Al Hadiid</p>
+  </header>
 
   <div class="container">
-    <div class="filter-container">
-      <label for="kelasFilter">Filter Kelas:</label>
+    <div class="filter-bar">
       <select id="kelasFilter" onchange="loadIzinList()">
-        <option value="">-- Semua Kelas --</option>
-        <option value="12 MIPA A">12 MIPA A</option>
+        <option value="">Semua Kelas</option>
+        <option value="10 TKJ 3">10 TKJ 3</option>
+        <option value="10 MP">10 MP</option>
+        <option value="10 AK">10 AK</option>
+        <option value="11 BD">11 BD</option>
+        <option value="11 TKJ">11 TKJ </option>
+        <option value="11 AK MP">11 AK MP</option>
+        <option value="11 BD">11 BD</option>
+        <option value="12 IPS">11 IPS</option>
+        <option value="12 MIPA">11 MIPA</option>
+        <option value="12 TKJ 3">12 TKJ 3</option>
         <option value="12 MIPA B">12 MIPA B</option>
-        <option value="12 IPS">12 IPS</option>
+        <option value="12 MIPA C">12 MIPA C</option>
       </select>
-
-      <label for="tanggalFilter">Filter Tanggal:</label>
-      <input type="date" id="tanggalFilter" onchange="loadIzinList()" />
-
-      <label for="searchInput">Cari Nama:</label>
-      <input type="text" id="searchInput" oninput="loadIzinList()" placeholder="Masukkan nama..." />
-      
-      <button class="btn btn-export" onclick="eksporCSV()">Ekspor CSV</button>
+      <input type="date" id="tanggalFilter" onchange="loadIzinList()">
+      <input type="text" id="searchInput" placeholder="Cari nama..." oninput="loadIzinList()">
+      <button class="btn btn-export" onclick="exportToExcel()">EKSPOR DATA</button>
     </div>
 
-    <h2>Absensi Harian</h2>
-    <p id="infoText" class="info-text"></p>
+    <p id="infoText">Memuat data...</p>
 
     <table>
       <thead>
@@ -216,20 +116,23 @@
           <th>Tanggal</th>
           <th>Nama</th>
           <th>Kelas</th>
-          <th>Jenis Izin</th>
+          <th>Keterangan</th>
           <th>Aksi</th>
         </tr>
       </thead>
-      <tbody id="izinList">
-        <tr>
-          <td colspan="5" style="text-align:center;">Belum ada data</td>
-        </tr>
-      </tbody>
+      <tbody id="izinList"></tbody>
     </table>
   </div>
 
-  <!-- Script Firebase -->
+  <nav class="bottom-nav">
+    <a href="izin.html"><i class="fa fa-check-square"></i>Izin</a>
+    <a href="scan.html"><i class="fa fa-qrcode"></i>Scan</a>
+    <a href="recap.html" class="active"><i class="fa fa-book"></i>Recap</a>
+    <a href="profile.html"><i class="fa fa-user"></i>Profil</a>
+  </nav>
+
   <script>
+    // Firebase setup
     const firebaseConfig = {
       apiKey:"AIzaSyBr4DNrjgpg1z_VVuP_uBJEs4iy0zkLOig",
       authDomain:"absensi-digital-199d2.firebaseapp.com",
@@ -242,141 +145,109 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Password untuk akses recap (selain guru)
-    const recapPassword = "alhadiidoke"; // Ganti password ini sesuai kebutuhan
-
-    // Fungsi untuk menampilkan modal password
-    function showPasswordModal() {
-      const modal = document.createElement('div');
-      modal.className = 'password-modal';
-      modal.innerHTML = `
-        <div class="password-modal-content">
-          <h2>Akses Terbatas</h2>
-          <p>Masukkan password untuk mengakses halaman recap:</p>
-          <input type="password" id="passwordInput" placeholder="Password" />
-          <br>
-          <button class="btn-primary" onclick="checkPassword()">Masuk</button>
-          <button class="btn-danger" onclick="redirectToHome()">Batal</button>
-        </div>
-      `;
-      document.body.appendChild(modal);
-    }
-
-    // Fungsi untuk cek password
-    function checkPassword() {
-      const input = document.getElementById('passwordInput').value;
-      if (input === recapPassword) {
-        document.querySelector('.password-modal').remove();
-        loadIzinList(); // Lanjutkan load data
-      } else {
-        alert('Password salah! Akses ditolak.');
-        redirectToHome();
-      }
-    }
-
-    // Fungsi redirect jika gagal
-    function redirectToHome() {
-      window.location.href = 'recap.html'; // Ganti dengan halaman utama jika ada
-    }
-
-    // Cek akses saat load
-    window.onload = function() {
-      const role = localStorage.getItem('role');
-      if (role === 'guru') {
-        loadIzinList(); // Langsung load jika guru
-      } else {
-        showPasswordModal(); // Tampilkan modal password untuk selain guru
-      }
-    };
-
     function loadIzinList() {
       const kelasFilter = document.getElementById('kelasFilter').value;
       const tanggalFilter = document.getElementById('tanggalFilter').value;
       const searchInput = document.getElementById('searchInput').value.toLowerCase();
-      const izinRef = database.ref('izin');
+      const izinList = document.getElementById('izinList');
       const infoText = document.getElementById('infoText');
 
-      izinRef.once('value').then(snapshot => {
-        const izinList = document.getElementById('izinList');
-        izinList.innerHTML = '';
+      const izinRef = database.ref('izin');
+      const presensiRef = database.ref('presensi');
 
-        if (snapshot.exists()) {
-          let data = [];
-          let activeDate = "";
+      Promise.all([izinRef.once('value'), presensiRef.once('value')])
+        .then(([izinSnap, presensiSnap]) => {
+          izinList.innerHTML = '';
+          let dataGabungan = [];
 
-          snapshot.forEach(child => {
-            const item = child.val();
-            const tanggal = new Date(item.tanggal).toLocaleDateString('id-ID');
-            const kelas = item.kelas;
-            const nama = item.nama.toLowerCase();
-
-            const today = new Date().toLocaleDateString('id-ID');
-            const isToday = tanggalFilter 
-              ? tanggal === new Date(tanggalFilter).toLocaleDateString('id-ID')
-              : tanggal === today;
-
-            const isKelasMatch = kelasFilter ? kelas === kelasFilter : true;
-            const isSearchMatch = searchInput ? nama.includes(searchInput) : true;
-
-            if (isToday && isKelasMatch && isSearchMatch) {
-              data.push({
+          if (izinSnap.exists()) {
+            izinSnap.forEach(child => {
+              const item = child.val();
+              const tanggal = new Date(item.tanggal || item.waktu).toLocaleDateString('id-ID');
+              dataGabungan.push({
+                sumber: 'izin',
                 key: child.key,
-                tanggal: tanggal,
-                nama: item.nama,
-                kelas: item.kelas,
-                jenisIzin: item.jenisIzin,
-                alasan: item.alasan
+                tanggal,
+                nama: item.nama || '-',
+                kelas: item.kelas || '-',
+                jenisIzin: item.jenisIzin || 'Izin',
+                alasan: item.alasan || '-',
+                waktu: item.waktu || item.tanggal
               });
-              activeDate = tanggalFilter ? new Date(tanggalFilter).toLocaleDateString('id-ID') : today;
-            }
+            });
+          }
+
+          if (presensiSnap.exists()) {
+            presensiSnap.forEach(child => {
+              const item = child.val();
+              const tanggal = new Date(item.waktu).toLocaleDateString('id-ID');
+              dataGabungan.push({
+                sumber: 'presensi',
+                key: child.key,
+                tanggal,
+                nama: item.nama || '-',
+                kelas: item.kelas || '-',
+                jenisIzin: item.keterangan || 'Presensi',
+                alasan: item.keterangan || '-',
+                waktu: item.waktu
+              });
+            });
+          }
+
+          // Filter data
+          dataGabungan = dataGabungan.filter(item => {
+            const today = new Date().toLocaleDateString('id-ID');
+            const matchTanggal = tanggalFilter
+              ? item.tanggal === new Date(tanggalFilter).toLocaleDateString('id-ID')
+              : item.tanggal === today;
+            const matchKelas = kelasFilter ? item.kelas === kelasFilter : true;
+            const matchNama = searchInput ? item.nama.toLowerCase().includes(searchInput) : true;
+            return matchTanggal && matchKelas && matchNama;
           });
 
-          data.sort((a, b) => {
+          // Sort by kelas & nama
+          dataGabungan.sort((a, b) => {
             if (a.kelas < b.kelas) return -1;
             if (a.kelas > b.kelas) return 1;
             return a.nama.localeCompare(b.nama);
           });
 
-          if (data.length > 0) {
-            data.forEach(item => {
+          // Tampilkan data
+          if (dataGabungan.length > 0) {
+            dataGabungan.forEach(item => {
               izinList.innerHTML += `
                 <tr>
                   <td>${item.tanggal}</td>
                   <td>${item.nama}</td>
                   <td>${item.kelas}</td>
                   <td>${item.jenisIzin}</td>
-                  <td>
-                    <button class="btn btn-primary" onclick="lihatDetail('${item.key}')">Detail</button>
-                  </td>
+                  <td><button class="btn btn-primary" onclick="lihatDetailGabungan('${item.sumber}', '${item.key}')">Detail</button></td>
                 </tr>
               `;
             });
-            infoText.textContent = "Menampilkan data tanggal: " + activeDate;
+            infoText.textContent = `Menampilkan ${dataGabungan.length} data gabungan dari izin & presensi`;
           } else {
             izinList.innerHTML = `<tr><td colspan="5" style="text-align:center;">Belum ada data</td></tr>`;
-            infoText.textContent = "Tidak ada data untuk tanggal ini.";
+            infoText.textContent = "Tidak ada data untuk filter yang dipilih.";
           }
-        } else {
-          izinList.innerHTML = `<tr><td colspan="5" style="text-align:center;">Belum ada data</td></tr>`;
-          infoText.textContent = "Belum ada data izin tersimpan.";
-        }
-      });
+        });
     }
 
-    function lihatDetail(id) {
-      database.ref('izin/' + id).once('value').then(snap => {
-        const izin = snap.val();
-        const tanggal = new Date(izin.tanggal).toLocaleDateString('id-ID');
+    function lihatDetailGabungan(sumber, id) {
+      const ref = database.ref(`${sumber}/${id}`);
+      ref.once('value').then(snap => {
+        const data = snap.val();
+        const tanggal = new Date(data.tanggal || data.waktu).toLocaleDateString('id-ID');
         const modal = document.createElement('div');
         modal.className = "modal";
         modal.innerHTML = `
           <div class="modal-content">
-            <h2>Detail Izin</h2>
-            <p><b>Nama:</b> ${izin.nama}</p>
-            <p><b>Kelas:</b> ${izin.kelas}</p>
+            <h2>Detail ${sumber === 'izin' ? 'Izin' : 'Presensi'}</h2>
+            <p><b>Nama:</b> ${data.nama || '-'}</p>
+            <p><b>Kelas:</b> ${data.kelas || '-'}</p>
             <p><b>Tanggal:</b> ${tanggal}</p>
-            <p><b>Jenis Izin:</b> ${izin.jenisIzin}</p>
-            <p><b>Alasan:</b> ${izin.alasan}</p>
+            <p><b>Keterangan:</b> ${data.jenisIzin || data.keterangan || '-'}</p>
+            ${data.alasan ? `<p><b>Alasan:</b> ${data.alasan}</p>` : ''}
             <div style="text-align:right;">
               <button class="btn btn-danger" onclick="this.closest('.modal').remove()">Tutup</button>
             </div>
@@ -386,42 +257,27 @@
       });
     }
 
-    function eksporCSV() {
-      const izinRef = database.ref('izin');
-      izinRef.once('value').then(snapshot => {
-        const data = [];
-        snapshot.forEach(child => {
-          const item = child.val();
-          data.push({
-            tanggal: new Date(item.tanggal).toLocaleDateString('id-ID'),
-            nama: item.nama,
-            kelas: item.kelas,
-            jenisIzin: item.jenisIzin,
-            alasan: item.alasan
-          });
-        });
+    function exportToExcel() {
+      const izinList = document.getElementById('izinList');
+      const rows = izinList.querySelectorAll('tr');
+      if (rows.length === 0) return alert('Tidak ada data untuk diekspor.');
 
-        const csvContent = "data:text/csv;charset=utf-8," 
-          + "Tanggal,Nama,Kelas,Jenis Izin,Alasan\n" 
-          + data.map(e => `${e.tanggal},${e.nama},${e.kelas},${e.jenisIzin},${e.alasan}`).join("\n");
-
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "daftar_izin.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      let csv = 'Tanggal,Nama,Kelas,Keterangan\n';
+      rows.forEach(r => {
+        const cols = r.querySelectorAll('td');
+        if (cols.length >= 4) {
+          csv += `${cols[0].innerText},${cols[1].innerText},${cols[2].innerText},${cols[3].innerText}\n`;
+        }
       });
-    }
-  </script>
 
-  <!-- Bottom Navigation -->
-  <nav class="bottom-nav">
-    <a href="izin.html"><i class="fa fa-check-square"></i>Izin</a>
-    <a href="scan.html"><i class="fa fa-qrcode"></i>Scan</a>
-    <a href="recap.html" class="active"><i class="fa fa-book"></i>Recap</a>
-    <a href="profile.html"><i class="fa fa-user"></i>Profil</a>
-  </nav>
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `DATA ABSENSI ${new Date().toISOString().split('T')[0]}.csv`;
+      link.click();
+    }
+
+    window.onload = loadIzinList;
+  </script>
 </body>
 </html>
