@@ -51,8 +51,8 @@ body {
   margin:0;
   padding:0;
   background:#f5f6fa; 
-  padding-bottom: 70px; /* Tambahkan padding bawah agar konten tidak tertutup oleh bottom nav */
-  overflow-y: auto; /* Pastikan bisa di-scroll vertikal */
+  padding-bottom: 70px;
+  overflow-y: auto;
 }
 header { text-align:center;padding:30px 20px 10px; }
 header h1 { color:#2f3e9e;margin-bottom:10px; }
@@ -67,18 +67,54 @@ header p { color:#555; }
 .btn-primary { background:#2f3e9e; }
 .btn-danger { background:#e74c3c; }
 .btn-export { background:#27ae60; }
-#reader { width:100%;border-radius:8px; }
-.card.presensi { max-width:1000px;margin:20px auto;flex:unset; }
-#kelasFilter { margin-bottom:15px;padding:8px;font-size:16px;border-radius:6px;border:1px solid #ccc;width:200px;color:#2f3e9e;font-weight:bold; }
-@media (max-width:768px) { .container { flex-direction:column;padding:10px; } .card { max-width:100%; } #reader { height:300px !important; } }
+#reader { width:100%;border-radius:8px; position:relative; overflow:hidden; }
+
+/* ===== LASER SCAN LINE ===== */
+.laser-line {
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:3px;
+  background:red;
+  animation: laserMove 2s linear infinite;
+  z-index:20;
+  opacity:0.8;
+}
+
+@keyframes laserMove {
+  0% { top:0; }
+  100% { top:100%; }
+}
+
+/* ===== LOADING CAMERA ===== */
+#loadingCamera {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.65);
+  padding: 12px 20px;
+  border-radius: 10px;
+  color: white;
+  z-index: 30;
+  font-size: 16px;
+  display: none;
+}
+
+@media (max-width:768px) {
+  .container { flex-direction:column;padding:10px; }
+  .card { max-width:100%; }
+  #reader { height:300px !important; }
+}
 </style>
 </head>
+
 <!-- ==== Bottom Navigation Bar ==== -->
 <nav class="bottom-nav">
   <a href="izin.html"><i class="fa fa-check-square"></i>Izin</a>
   <a href="scan.html" class="active"><i class="fa fa-qrcode"></i>Scan</a>
   <a href="recap.html"><i class="fa fa-book"></i>Recap</a>
-  <a href="profile.html"><i class="fa fa-user"></i>Profil</a>
 </nav>
 
 <body>
@@ -89,15 +125,42 @@ header p { color:#555; }
 </header>
 
 <div class="container">
+
+<!-- ============================== -->
+<!--   CARD SCAN + TOMBOL FLASH     -->
+<!-- ============================== -->
 <div class="card">
-<h3>Scan Barcode Anda Disini</h3>
-<hr />
-<div id="reader"></div>
+
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h3 style="margin: 0;">Scan Barcode Anda Disini</h3>
+
+    <!-- Tombol Flash -->
+    <button id="flashBtn" 
+            style="background: #2f3e9e; color: white; border: none; padding: 8px 12px;
+                   border-radius: 6px; cursor: pointer; display: flex; align-items: center;
+                   gap: 6px; font-size: 14px;">
+        <i class="fa-solid fa-bolt"></i> Flash
+    </button>
+  </div>
+
+  <hr />
+
+  <div id="reader">
+      <div id="loadingCamera">📷 Mengaktifkan Kamera...</div>
+      <div class="laser-line"></div>
+  </div>
+
 </div>
+
+
+<!-- ============================== -->
+<!--            CARD DATA           -->
+<!-- ============================== -->
 
 <div class="card">
 <h3>Data Peserta</h3>
 <hr />
+
 <div class="label">Status:</div>
 <div class="value"><span class="badge" id="status">Menunggu scan</span></div>
 
@@ -124,9 +187,11 @@ header p { color:#555; }
 <button class="btn btn-danger" onclick="resetData()">Reset</button>
 </div>
 </div>
-</div>
+
+</div> <!-- container END -->
 
 <script>
+/* ============ FIREBASE CONFIG ============= */
 const firebaseConfig = {
 apiKey:"AIzaSyBr4DNrjgpg1z_VVuP_uBJEs4iy0zkLOig",
 authDomain:"absensi-digital-199d2.firebaseapp.com",
@@ -139,9 +204,23 @@ appId:"1:387823714427:web:6938dd60c1fcf1a87662de"
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+/* ============ SCANNER ============= */
 const scanner = new Html5Qrcode("reader");
-const audioSuccess = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
 
+/* Success beep */
+const audioSuccess = new Audio(
+  "https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"
+);
+
+/* Error beep */
+const audioError = new Audio(
+  "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+);
+
+/* LOADING CAMERA */
+document.getElementById("loadingCamera").style.display = "block";
+
+/* GPS & Radius */
 const schoolLat=-6.408638;
 const schoolLng=106.963852;
 const radiusM=1000;
@@ -149,32 +228,60 @@ const jamMulaiAbsensi=6;
 const jamAkhirAbsensi=7;
 
 function getDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371000; // radius bumi dalam meter
+  const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c; // jarak dalam meter
+  return R * c;
 }
 
 function startScanner(){
-scanner.start(
-{facingMode:"environment"},
-{fps:10, qrbox:{width:250,height:150}},
-hasil=>{
-scanner.pause();
-audioSuccess.play();
-navigator.geolocation.getCurrentPosition(
-pos=>prosesDataGPS(hasil,pos.coords.latitude,pos.coords.longitude),
-err=>{ alert("Tidak bisa mendapatkan lokasi GPS!"); restartScanner(); }
-);
-},
-err=>{}
-).catch(err=>{ alert("Gagal mengakses kamera!"); });
+
+    scanner.start(
+        {facingMode:"environment"},
+        {fps:10, qrbox:{width:250,height:150}},
+        hasil => {
+            scanner.pause();
+            audioSuccess.play();
+            navigator.vibrate?.(120);
+
+            navigator.geolocation.getCurrentPosition(
+                pos=>prosesDataGPS(hasil,pos.coords.latitude,pos.coords.longitude),
+                err=>{
+                    audioError.play();
+                    alert("Tidak bisa mendapatkan lokasi GPS!");
+                    restartScanner();
+                }
+            );
+        },
+
+        err => {
+            audioError.play();
+        }
+    )
+    .then(() => {
+        document.getElementById("loadingCamera").style.display = "none";
+
+        /* SIMPAN STREAM UNTUK FLASH */
+        try {
+            currentStream = scanner.getState().scanner.stream;
+        } catch(e) {
+            console.log("Tidak bisa mengambil stream:", e);
+        }
+
+    })
+    .catch(err=>{
+        alert("Gagal mengakses kamera!");
+    });
 }
 
 function restartScanner(){
-setTimeout(()=>{ scanner.resume(); document.getElementById("status").textContent="Menunggu scan"; document.getElementById("status").style.backgroundColor="orange"; },2000);
+setTimeout(()=>{
+    scanner.resume();
+    document.getElementById("status").textContent="Menunggu scan";
+    document.getElementById("status").style.backgroundColor="orange";
+}, 2000);
 }
 
 function prosesDataGPS(data, lat, lng){
@@ -183,8 +290,16 @@ const jamSekarang=now.getHours();
 const menitSekarang=now.getMinutes();
 
 let nama="-", kelas="-", absen="-";
-try{ const obj=JSON.parse(data); nama=obj.nama||"-"; kelas=obj.kelas||"-"; absen=obj.absen||"-"; }
-catch(e){ nama=data; }
+
+try{
+    const obj=JSON.parse(data);
+    nama=obj.nama||"-"; 
+    kelas=obj.kelas||"-"; 
+    absen=obj.absen||"-"; 
+} catch(e){
+    audioError.play();
+    nama=data;
+}
 
 const jarak = getDistance(schoolLat, schoolLng, lat, lng);
 document.getElementById("jarakSekolah").textContent = `${Math.round(jarak)} meter`;
@@ -204,7 +319,10 @@ document.getElementById("absen").textContent=absen;
 
 let keterangan="Hadir";
 let warna="#27ae60";
-if(jamSekarang>jamAkhirAbsensi||(jamSekarang===jamAkhirAbsensi && menitSekarang>0)){ keterangan="Telat"; warna="#e74c3c"; }
+if(jamSekarang>jamAkhirAbsensi||(jamSekarang===jamAkhirAbsensi && menitSekarang>0)){ 
+    keterangan="Telat"; 
+    warna="#e74c3c"; 
+}
 document.getElementById("keterangan").innerHTML=`<span class="badge" style="background-color:${warna};">${keterangan}</span>`;
 document.getElementById("waktu").textContent=now.toLocaleString();
 window.keteranganScan=keterangan;
@@ -231,28 +349,83 @@ const absen=document.getElementById("absen").textContent;
 const keterangan=window.keteranganScan||"-";
 const gps=window.scanDataGPS||{lat:null,lng:null};
 
-if(nama==="-"||kelas==="-"||absen==="-"){ alert("Data peserta belum lengkap!"); return; }
+if(nama==="-"||kelas==="-"||absen==="-"){ 
+    audioError.play();
+    alert("Data peserta belum lengkap!"); 
+    return; 
+}
 
 const now=new Date();
 const today=now.toISOString().split("T")[0];
-const sudahAbsen=Object.values(semuaPresensi).some(item=>item.nama===nama && item.kelas===kelas && item.absen===absen && item.waktu.startsWith(today));
-if(sudahAbsen){ alert("Anda sudah absen hari ini!"); return; }
+const sudahAbsen=Object.values(semuaPresensi).some(item=>
+    item.nama===nama && item.kelas===kelas && item.absen===absen && item.waktu.startsWith(today)
+);
+if(sudahAbsen){ 
+    audioError.play();
+    alert("Anda sudah absen hari ini!"); 
+    return; 
+}
 
 const newKey=database.ref().child('presensi').push().key;
 database.ref('presensi/'+newKey).set({
 nama, kelas, absen, keterangan, waktu: now.toISOString(), lat:gps.lat, lng:gps.lng
-}).then(()=>{ alert("Absensi Berhasil Tersimpan!"); resetData(); }).catch(err=>{ alert("Gagal simpan data: "+err.message); });
+}).then(()=>{ 
+    audioSuccess.play();
+    alert("Absensi Berhasil Tersimpan!"); 
+    resetData(); 
+}).catch(err=>{
+    audioError.play();
+    alert("Gagal simpan data: "+err.message); 
+});
 }
 
 let semuaPresensi={};
-
 database.ref("presensi").on("value", snapshot=>{ tampilkanDataPresensi(snapshot.val()); });
 
-function eksporCSV(){
-alert("Fitur ekspor CSV telah dihapus.");
-}
+function eksporCSV(){ alert("Fitur ekspor CSV telah dihapus."); }
 
 window.onload=()=>{ startScanner(); };
+
+/* ===================================== */
+/*           FLASH CAMERA SCRIPT         */
+/* ===================================== */
+
+let flashOn = false;
+let currentStream = null;
+
+async function toggleFlash() {
+    if (!currentStream) {
+        alert("Kamera belum siap!");
+        return;
+    }
+
+    const track = currentStream.getVideoTracks()[0];
+    const capabilities = track.getCapabilities();
+
+    if (!capabilities.torch) {
+        alert("Device tidak mendukung flash!");
+        return;
+    }
+
+    flashOn = !flashOn;
+
+    try {
+        await track.applyConstraints({
+            advanced: [{ torch: flashOn }]
+        });
+
+        document.getElementById("flashBtn").style.background = flashOn ? "#e67e22" : "#2f3e9e";
+        document.getElementById("flashBtn").innerHTML = flashOn 
+            ? '<i class="fa-solid fa-bolt"></i> Flash ON'
+            : '<i class="fa-solid fa-bolt"></i> Flash';
+
+    } catch (e) {
+        console.error("Gagal toggle flash:", e);
+    }
+}
+
+document.getElementById("flashBtn").addEventListener("click", toggleFlash);
+
 </script>
 
 </body>
